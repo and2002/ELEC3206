@@ -1,0 +1,63 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import math
+from scipy.stats import linregress
+
+
+def linear_regression_parameters(X, Y):
+    X_mean = np.mean(X)
+    Y_mean = np.mean(Y)
+
+    numerator = np.sum((X - X_mean) * (Y - Y_mean))
+    denominator = np.sum((X - X_mean) ** 2)
+
+    slope = numerator / denominator
+    intercept = Y_mean - slope * X_mean
+
+    # Calculate residuals and standard error
+    residuals = Y - (slope * X + intercept)
+    std_err = np.sqrt(np.sum(residuals ** 2) / (len(X) - 2))
+    dk = std_err / np.sqrt(np.sum((X - X_mean) ** 2))
+    db = std_err * np.sqrt(1 / len(X) + X_mean ** 2 / np.sum((X - X_mean) ** 2))
+
+    return slope, intercept, dk, db
+
+file_address = "C:/Users/avp12/Desktop/SU/ELEC3206/lab2/data.xlsx"
+data = pd.read_excel(file_address, sheet_name="ex2")
+T = data["Torque"]
+S = data["Speed"]
+S1 = S[2:10].values  # Convert to NumPy array
+S2 = S[12:27].values  # Convert to NumPy array
+T1 = T[2:10].values  # Convert to NumPy array
+T2 = T[12:27].values  # Convert to NumPy array
+
+plt.plot(S1, T1, "ro")
+plt.plot(S2, T2, "bo")
+plt.ylabel("Torque, N*m")
+plt.xlabel("Speed, r/min")
+print(data)
+# approximation for line
+slope1, inter1, dk1, db1 = linear_regression_parameters(S1, T1)
+#print("line 1", slope1, inter1, dk1, db1)
+x1 = np.array([S1.min(), T1.max()])
+y1 = x1 * slope1 + inter1
+#plt.plot(x1, y1, color="orange")
+
+slope2, inter2, dk2, db2 = linear_regression_parameters(S2, T2)
+print("line 2", slope2, inter2, dk2, db2)
+w = float(60*slope2/(2*math.pi))
+print("slope in rad/s", w)
+x2 = np.array([S2.min(), S2.max()])
+y2 = x2 * slope2 + inter2
+
+b = 11.96
+k = -0.06838*2*math.pi/60
+x3 = np.array([S2.min(), S2.max()])
+y3 = x3 * k + b
+
+plt.plot(x2, y2, color="purple")
+plt.plot(x3,y3, color = "orange")
+
+plt.legend(["lower R", "bigger R", "approx bigger R","expectation"])
+plt.show()
