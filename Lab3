@@ -1,0 +1,138 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import math
+#initial constants
+Rr = 31.76
+Xr = 59.01
+Xs = 59.01
+Rs = 56.47
+Rc = 10942.52
+Xm = 917.22
+V = 145.08
+Z11 = Rs+1j*Xs
+Z12 = 1j*Xm
+Z1 = Z11*Z12/(Z12+Z11)
+Req = Z1.real
+Xeq = Z1.imag
+#input data
+torque1 = [1.01, 1.058, 1.092, 1.114, 1.126, 1.131, 1.127, 1.121, 1.108, 1.092, 1.077, 1.052, 0.975, 0.954, 1.012, 1.039]
+I1 = [0.637, 0.696, 0.75, 0.799, 0.841, 0.88, 0.915, 0.946, 0.974, 0.998, 1.024, 1.045, 1.063, 1.081, 1.093, 1.108]
+Pm1 = [112.1,109.6,105.2,98.89,91.62,83.75,75.06,66.32,57.41,48.47,39.83,31.18,21.54,14.09,7.737,0]
+rpm1 = [1060, 989, 920, 848, 777, 707, 636, 565, 495, 424, 353, 283, 211, 141, 73, 0]
+Pe1 = [234.7,254.6,272.5,287.2,300,311.4,320.7,329,335.6,341.7,348.3,353.3,357.2,361.5,362.2,367.4,]
+Qe1 = [155.7,171.8,187.9,203.4,217.3,230.4,242.5,253.8,263.9,273.4,283.5,292,299.5,306.6,312.4,318.1]
+
+rpm2 = [1495, 1460, 1419, 1376, 1339, 1300, 1259, 1219, 1180, 1141, 1101]
+I2 = [0.143,0.175,0.225,0.287,0.333,0.383,0.432,0.48,0.522,0.562,0.601]
+Pm2 = [-4.587,19.6,41.15,54.41,72.59,84.1,92.74,99.33,103.3,105.9,107.1,]
+torque2 = [-0.029, 0.128, 0.277, 0.378, 0.518, 0.618, 0.703, 0.778, 0.836, 0.887, 0.929]
+Pe2 = [8.137,34.82,61.74,91.76,111.2,131.9,151.1,169.7,185,199.6,213.1]
+Qe2 = [60.06,64.44,70.59,79.33,86.45,94.98,104.1,114,123.1,132.3,141.6]
+def slip(N):
+    Ns = 1500 #rpm
+    s = float((Ns-N)/Ns)
+    return s
+
+def LECTorque(s): #torque according to lec
+    Ns = 1500
+    W_syn = math.pi * 2 * Ns / 60
+    a = float(3*V**2*Rr/s*1/W_syn)
+    b = float((Req+Rr/s)**2+(Xeq+Xr)**2)
+    return float(a/b)
+
+def Omega(s):
+    Ns = 1500
+    W_syn = math.pi * 2 * Ns / 60
+    Wr = (1-s)*W_syn
+    return Wr
+
+def Imodel(s): #current form lec
+    b = (Req+Rr/s)+(Xeq+Xr)*1j
+    a  = V
+    return(a/b)
+print(Omega(0.2))
+print(Omega(0.3))
+N = 120
+Smodel = np.linspace(0.01, 1, N)
+Sset1 = len(rpm1)*[0]
+Sset2 = len(rpm2)*[0]
+ef1 = len(rpm1)*[0]
+ef2 = len(rpm2)*[0]
+
+torqueCalc = N*[0]
+PmCalc = N*[0]
+PeCalc = N*[0]
+ICalc = N*[0]
+QeCalc = N*[0]
+efCalc = N*[0]
+
+for i in range(len(rpm1)):
+    Sset1[i] = slip(rpm1[i])
+    ef1[i] = float(Pm1[i]/Pe1[i])
+
+for i in range(len(rpm2)):
+    Sset2[i] = slip(rpm2[i])
+    ef2[i] = float(Pm2[i] / Pe2[i])
+
+for i in range(N): #theoretical values
+    torqueCalc[i] = LECTorque(Smodel[i])
+    PmCalc[i] = torqueCalc[i]*Omega(Smodel[i])
+    ICalc[i] = abs(Imodel(Smodel[i]))
+    PeCalc[i] = (Imodel(Smodel[i]).conjugate()*V*3).real
+    QeCalc[i] = (Imodel(Smodel[i]).conjugate()*V*3).imag
+    efCalc[i] = float(PmCalc[i]/PeCalc[i])
+
+plt.figure(1) #torque vs speed
+plt.title("Torque and slip")
+plt.plot(Sset1,torque1,color = "red")
+plt.plot(Sset2,torque2,color = "orange")
+plt.plot(Smodel,torqueCalc, color = "blue")
+plt.xlabel("Slip")
+plt.ylabel("Torque")
+plt.legend(["initial data1","initial data2","model result"])
+
+plt.figure(2)
+plt.title("Current and slip")
+plt.plot(Sset1,I1,color = "red")
+plt.plot(Sset2,I2,color = "orange")
+plt.plot(Smodel,ICalc, color = "blue")
+plt.xlabel("Slip")
+plt.ylabel("current,A")
+plt.legend(["initial data1","initial data2","model result"])
+
+plt.figure(3)
+plt.title("Mechanical Power and slip")
+plt.plot(Sset1,Pm1,color = "red")
+plt.plot(Sset2,Pm2,color = "orange")
+plt.plot(Smodel,PmCalc, color = "blue")
+plt.xlabel("Slip")
+plt.ylabel("Power,W")
+plt.legend(["initial data1","initial data2","model result"])
+
+plt.figure(4)
+plt.title("Active Power and slip")
+plt.plot(Sset1,Pe1,color = "red")
+plt.plot(Sset2,Pe2,color = "orange")
+plt.plot(Smodel,PeCalc, color = "blue")
+plt.xlabel("Slip")
+plt.ylabel("Power,W")
+plt.legend(["initial data1","initial data2","model result"])
+
+plt.figure(5)
+plt.title("Reactive Power and slip")
+plt.plot(Sset1,Qe1,color = "red")
+plt.plot(Sset2,Qe2,color = "orange")
+plt.plot(Smodel,QeCalc, color = "blue")
+plt.xlabel("Slip")
+plt.ylabel("Power,var")
+plt.legend(["initial data1","initial data2","model result"])
+
+plt.figure(6)
+plt.title("Efficiency and slip")
+plt.plot(Sset1,ef1,color = "red")
+plt.plot(Sset2,ef2,color = "orange")
+plt.plot(Smodel,efCalc, color = "blue")
+plt.xlabel("Slip")
+plt.ylabel("Efficiency")
+plt.legend(["initial data1","initial data2","model result"])
+plt.show()
